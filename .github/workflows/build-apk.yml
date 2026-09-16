@@ -14,7 +14,7 @@ jobs:
 
       - name: Extract project ZIP
         run: |
-          mkdir project
+          mkdir -p project
           unzip -q *.zip -d project
 
       - name: Setup Java
@@ -23,24 +23,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK
+      - name: Install Android SDK packages
         run: |
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Find Gradle project
+        run: |
+          find project -name gradlew -type f
+
       - name: Build APK
-        working-directory: project
-        run: gradle assembleDebug
+        run: |
+          GRADLEW=$(find project -name gradlew -type f | head -1)
+          chmod +x "$GRADLEW"
+          cd "$(dirname "$GRADLEW")"
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Wakil-Ahmad-Atom-Explorer-APK
-          path: project/app/build/outputs/apk/debug/app-debug.apk
+          name: app-debug
+          path: project/**/build/outputs/apk/**/*.apk
