@@ -16,8 +16,6 @@ jobs:
         run: |
           mkdir -p project
           unzip -q *.zip -d project
-          cd project
-          find . -maxdepth 2 -type f | head -50
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -30,9 +28,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Build APK
+      - name: Find project and build APK
         run: |
-          cd project
+          GRADLEW=$(find project -type f -name gradlew -print -quit)
+
+          if [ -z "$GRADLEW" ]; then
+            echo "ERROR: gradlew was not found inside the ZIP."
+            find project -maxdepth 4 -type f | head -100
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$GRADLEW")
+          echo "Project directory: $PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
           chmod +x gradlew
           ./gradlew assembleDebug
 
@@ -40,4 +49,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: project/app/build/outputs/apk/debug/*.apk
+          path: project/**/build/outputs/apk/debug/*.apk
