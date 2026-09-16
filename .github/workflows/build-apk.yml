@@ -16,33 +16,28 @@ jobs:
         run: |
           mkdir -p project
           unzip -q *.zip -d project
+          cd project
+          find . -maxdepth 2 -type f | head -50
 
-      - name: Setup Java
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Find Gradle project
-        run: |
-          find project -name gradlew -type f
-
       - name: Build APK
         run: |
-          GRADLEW=$(find project -name gradlew -type f | head -1)
-          chmod +x "$GRADLEW"
-          cd "$(dirname "$GRADLEW")"
-          ./gradlew assembleDebug --no-daemon
+          cd project
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: project/**/build/outputs/apk/**/*.apk
+          path: project/app/build/outputs/apk/debug/*.apk
