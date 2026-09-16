@@ -28,14 +28,42 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Fix JVM target
+        run: |
+          APP_GRADLE=$(find project -type f -path "*/app/build.gradle" -print -quit)
+
+          if [ -z "$APP_GRADLE" ]; then
+            echo "ERROR: app/build.gradle not found"
+            exit 1
+          fi
+
+          echo "Using: $APP_GRADLE"
+
+          cat >> "$APP_GRADLE" <<'EOF'
+
+          // CI JVM target fix
+          android {
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+
+          tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          EOF
+
       - name: Find project
         run: |
-          find project -name settings.gradle -o -name build.gradle -o -name app
+          PROJECT_DIR=$(dirname "$(find project -type f -name settings.gradle -print -quit)")
+          echo "Project directory: $PROJECT_DIR"
 
       - name: Build APK with Gradle
         run: |
           PROJECT_DIR=$(dirname "$(find project -type f -name settings.gradle -print -quit)")
-          echo "Project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           gradle assembleDebug --no-daemon
 
